@@ -10,7 +10,7 @@
 using molpro::FCIdump;
 using namespace spin_orbital;
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   std::cout << std::fixed << std::setprecision(8);
   if (argc < 2)
     throw std::out_of_range("must give FCIdump filename as first command-line argument");
@@ -57,10 +57,12 @@ int main(int argc, char* argv[]) {
   std::cout << "check: " << (papt_kernel * papt_solution - papt_rhs).norm() << std::endl;
   auto papt_operator = PAPT_unpack(papt_solution, hamiltonian);
   //  auto solver_raw = Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>(
-  //      Eigen::Map<Eigen::MatrixXd>(papt_operator.f.data(), papt_operator.norb, papt_operator.norb));
-  //  std::cout << "PAPT operator eigenvalues before shift: " << solver_raw.eigenvalues().transpose() << std::endl;
-  //  std::cout << "hamiltonian.e0 " << hamiltonian.e0 << std::endl;
-  //  std::cout << "papt_operator.e0 " << papt_operator.e0 << std::endl;
+  //      Eigen::Map<Eigen::MatrixXd>(papt_operator.f.data(),
+  //      papt_operator.norb, papt_operator.norb));
+  //  std::cout << "PAPT operator eigenvalues before shift: " <<
+  //  solver_raw.eigenvalues().transpose() << std::endl; std::cout <<
+  //  "hamiltonian.e0 " << hamiltonian.e0 << std::endl; std::cout <<
+  //  "papt_operator.e0 " << papt_operator.e0 << std::endl;
   for (int i = 0; i < hamiltonian.norb; ++i)
     papt_operator.f(i, i) += (hamiltonian.e0 - hamiltonian.ecore - papt_operator.e0) / hamiltonian.nelec;
   auto solver = Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>(
@@ -84,9 +86,9 @@ int main(int argc, char* argv[]) {
       SDaction(hamiltonian, amplitudes_PAPT1_backrotated, true, true) * amplitudes_PAPT1_backrotated + epapt2;
   std::cout << "PAPT3 energy contribution and total: " << epapt3 << " "
             << hamiltonian.e0 + hamiltonian.e1 + epapt2 + epapt3 << std::endl;
-  if (argc > 3 && std::abs(epapt2 - std::stod(argv[3])) > 1e-6 || std::isnan(epapt2))
+  if ((argc > 3 && std::abs(epapt2 - std::stod(argv[3])) > 1e-6) || std::isnan(epapt2))
     throw std::runtime_error(std::string{"Second order energy does not match reference value "} + argv[3]);
-  if (argc > 4 && std::abs(epapt3 - std::stod(argv[4])) > 1e-6 || std::isnan(epapt3))
+  if ((argc > 4 && std::abs(epapt3 - std::stod(argv[4])) > 1e-6) || std::isnan(epapt3))
     throw std::runtime_error(std::string{"Third order energy does not match reference value "} + argv[4]);
 
   if (argc > 2)

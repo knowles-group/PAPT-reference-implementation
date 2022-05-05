@@ -109,6 +109,9 @@ spin_orbital::Hamiltonian spin_orbital::PAPT_unpack(const Eigen::VectorXd& vecto
   hamiltonian.spin_orbital = reference_operator.spin_orbital;
   hamiltonian.ecore = reference_operator.ecore;
   hamiltonian.uhf = reference_operator.uhf;
+  hamiltonian.occ = reference_operator.occ;
+  hamiltonian.closed = reference_operator.closed;
+  hamiltonian.orbsym = reference_operator.orbsym;
   hamiltonian.spin_multiplicity = reference_operator.spin_multiplicity;
   return hamiltonian;
 }

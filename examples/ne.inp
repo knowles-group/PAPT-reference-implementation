@@ -1,5 +1,5 @@
 gthresh,energy=1e-14
-symmetry,nosym
+!symmetry,nosym
 basis,aug-cc-pVDZ
 geometry={Ne}
 rhf

@@ -8,19 +8,22 @@ class Hamiltonian {
 public:
   int norb;
   int nelec;
-  Hamiltonian(const molpro::FCIdump&);
-  Hamiltonian(size_t basis_size, bool oneElectron = true, bool twoElectron = true);
-  void dump(const std::string& filename) const;
-  double ecore;
-  double e0;
-  double e1;
+  std::vector<int> occ;
+  std::vector<int> closed;
+  std::vector<int> orbsym;
   bool uhf;
   int spin_multiplicity;
-  std::vector<std::vector<int>> spin_orbital;
   Eigen::Tensor<double, 2> h;
   Eigen::Tensor<double, 2> f;
   Eigen::Tensor<double, 4> dirac;
   Eigen::Tensor<double, 4> mulliken;
+  double ecore;
+  double e0;
+  double e1;
+  std::vector<std::vector<int>> spin_orbital;
+  Hamiltonian(const molpro::FCIdump&);
+  Hamiltonian(size_t basis_size, bool oneElectron = true, bool twoElectron = true);
+  void dump(const std::string& filename) const;
 };
 } // namespace spin_orbital
 #endif // SPIN_ORBITAL_MAIN_CPP_HAMILTONIAN_H_
