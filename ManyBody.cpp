@@ -1,0 +1,120 @@
+#include "ManyBody.h"
+#include "Hamiltonian.h"
+#include <Eigen/Core>
+#include <iostream>
+spin_orbital::Amplitudes spin_orbital::SDaction(const spin_orbital::Hamiltonian& hamiltonian,
+                                                const spin_orbital::Amplitudes& amplitudes, bool oneElectron,
+                                                bool twoElectron) {
+  spin_orbital::Amplitudes result(amplitudes);
+  const auto& t2 = amplitudes.t2;
+  const auto& no = hamiltonian.nelec;
+  const auto& nv = hamiltonian.norb - no;
+  result.t1.setZero();
+  result.t2.setZero();
+  for (int i = 0; i < no; ++i)
+    for (int j = 0; j < no; ++j)
+      for (int a = 0; a < nv; ++a)
+        for (int b = 0; b < nv; ++b) {
+          if (oneElectron) {
+            for (int m = 0; m < no; ++m)
+              result.t2(a, b, i, j) += hamiltonian.f(m, j) * t2(a, b, m, i) - hamiltonian.f(m, i) * t2(a, b, m, j);
+            for (int e = 0; e < nv; ++e)
+              result.t2(a, b, i, j) +=
+                  hamiltonian.f(a + no, e + no) * t2(e, b, i, j) - hamiltonian.f(b + no, e + no) * t2(e, a, i, j);
+          }
+          if (twoElectron) {
+            for (int m = 0; m < no; ++m)
+              for (int n = 0; n < m; ++n)
+                result.t2(a, b, i, j) += hamiltonian.dirac(m, n, i, j) * t2(a, b, m, n);
+            for (int e = 0; e < nv; ++e)
+              for (int f = 0; f < e; ++f)
+                result.t2(a, b, i, j) += hamiltonian.dirac(e + no, f + no, a + no, b + no) * t2(e, f, i, j);
+            for (int e = 0; e < nv; ++e)
+              for (int m = 0; m < no; ++m)
+                result.t2(a, b, i, j) += hamiltonian.dirac(a + no, m, i, e + no) * t2(e, b, m, j) -
+                                         hamiltonian.dirac(b + no, m, i, e + no) * t2(e, a, m, j) -
+                                         hamiltonian.dirac(a + no, m, j, e + no) * t2(e, b, m, i) +
+                                         hamiltonian.dirac(b + no, m, j, e + no) * t2(e, a, m, i);
+          }
+        }
+  return result;
+}
+Eigen::VectorXd spin_orbital::PAPT_action(const spin_orbital::Amplitudes& amplitudes,
+                                          const spin_orbital::Amplitudes& action) {
+  const auto& no = amplitudes.t1.dimension(1);
+  const auto& nv = amplitudes.t1.dimension(0);
+  spin_orbital::Hamiltonian result(no + nv, true, false);
+  result.nelec = no;
+  //  std::cout << "amplitudes "<<amplitudes.t2<<std::endl;
+  //  std::cout << "action "<<action.t2<<std::endl;
+  result.h.setZero();
+  for (int i = 0; i < no; ++i)
+    for (int j = 0; j < no; ++j)
+      for (int m = 0; m < no; ++m)
+        for (int e = 0; e < nv; ++e)
+          for (int f = 0; f < nv; ++f)
+            result.h(i, j) += double(0.5) * amplitudes.t2(e, f, i, m) * action.t2(e, f, m, j) +
+                              double(0.5) * amplitudes.t2(e, f, j, m) * action.t2(e, f, m, i);
+  for (int a = 0; a < nv; ++a)
+    for (int b = 0; b < nv; ++b)
+      for (int c = 0; c < nv; ++c)
+        for (int m = 0; m < no; ++m)
+          for (int n = 0; n < no; ++n)
+            result.h(no + a, no + b) += double(0.5) * amplitudes.t2(a, c, m, n) * action.t2(c, b, m, n) +
+                                        double(0.5) * amplitudes.t2(b, c, m, n) * action.t2(c, a, m, n);
+  return PAPT_pack(result);
+}
+Eigen::VectorXd spin_orbital::PAPT_pack(const spin_orbital::Hamiltonian& hamiltonian) {
+  const auto& no = hamiltonian.nelec;
+  const auto& nv = hamiltonian.norb - hamiltonian.nelec;
+  Eigen::VectorXd res(no * (no + 1) / 2 + nv * (nv + 1) / 2);
+  size_t off = 0;
+  for (int i = 0; i < no; ++i)
+    for (int j = 0; j <= i; ++j)
+      res[off++] = hamiltonian.h(i, j);
+  for (int a = 0; a < nv; ++a)
+    for (int b = 0; b <= a; ++b)
+      res[off++] = hamiltonian.h(no + a, no + b);
+  return res;
+}
+
+spin_orbital::Hamiltonian spin_orbital::PAPT_unpack(const Eigen::VectorXd& vector, size_t norb, size_t nelec) {
+  spin_orbital::Hamiltonian result(norb, true, false);
+  result.h.setZero();
+  int no = nelec;
+  int nv = norb - nelec;
+  size_t off = 0;
+  for (int i = 0; i < no; ++i)
+    for (int j = 0; j <= i; ++j)
+      result.h(i, j) = result.h(j, i) = vector[off++];
+  for (int a = 0; a < nv; ++a)
+    for (int b = 0; b <= a; ++b)
+      result.h(no + a, no + b) = result.h(no + b, no + a) = vector[off++];
+  result.f = result.h;
+  result.nelec = nelec;
+  result.e0 = 0;
+  for (int i = 0; i < nelec; ++i)
+    result.e0 += result.f(i, i);
+  return result;
+}
+spin_orbital::Hamiltonian spin_orbital::PAPT_unpack(const Eigen::VectorXd& vector,
+                                                    const spin_orbital::Amplitudes& reference_amplitudes) {
+  return spin_orbital::PAPT_unpack(vector, reference_amplitudes.t1.dimension(0) + reference_amplitudes.t1.dimension(1),
+                                   reference_amplitudes.t1.dimension(1));
+}
+
+spin_orbital::Hamiltonian spin_orbital::PAPT_unpack(const Eigen::VectorXd& vector,
+                                                    const spin_orbital::Hamiltonian& reference_operator) {
+  auto hamiltonian = spin_orbital::PAPT_unpack(vector, reference_operator.norb, reference_operator.nelec);
+  hamiltonian.spin_orbital = reference_operator.spin_orbital;
+  hamiltonian.ecore = reference_operator.ecore;
+  hamiltonian.uhf = reference_operator.uhf;
+  hamiltonian.spin_multiplicity = reference_operator.spin_multiplicity;
+  return hamiltonian;
+}
+Eigen::VectorXd spin_orbital::PAPT_kernel_action(const Eigen::VectorXd& potential,
+                                                 const spin_orbital::Amplitudes& amplitudes) {
+  auto hamiltonian = PAPT_unpack(potential, amplitudes);
+  auto action = SDaction(hamiltonian, amplitudes, true, false);
+  return PAPT_action(amplitudes, action);
+}

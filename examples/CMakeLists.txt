@@ -1,0 +1,12 @@
+function(fcidump_test job e2 e3)
+    get_filename_component(nam ${job} NAME_WE)
+    if (${e3} EQUAL 0)
+        unset(e3)
+    endif ()
+    add_test(NAME ${nam} COMMAND ${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/${job} ${CMAKE_CURRENT_BINARY_DIR}/${job} ${e2} ${e3})
+endfunction()
+
+fcidump_test(c_valence.fcidump -0.08932979 -0.00082530)
+fcidump_test(c_all.fcidump -0.09790293 -0.00086678)
+fcidump_test(ne.fcidump -0.20890765 -0.00005230)
+fcidump_test(ch2.fcidump -0.13835401 -0.00075157)

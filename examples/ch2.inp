@@ -1,0 +1,12 @@
+symmetry,nosym
+geometry={c;h,c,r;h,c,r,h,theta}
+r=1.102 angstrom, theta=104.7
+basis,vdz(d/p)
+gthresh,energy=1e-14
+rhf
+rhf,accuracy=1e-12
+mp3
+{papt; core,1}
+mp3
+{fci,dump=ch2.fcidump;core,1;orbital,2100.2}
+system,PAPT-reference-implementation 'ch2.fcidump'
