@@ -15,6 +15,7 @@ public:
   double operator*(const Amplitudes& other) const;
   std::string str(bool oneElectron = true, bool twoElectron = true) const;
   Amplitudes transform(const Eigen::MatrixXd rot) const;
+  const Hamiltonian& reference_hamiltonian;
 };
 } // namespace spin_orbital
 

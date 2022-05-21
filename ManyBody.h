@@ -11,11 +11,10 @@ Eigen::VectorXd PAPT_kernel_action(const Eigen::VectorXd& potential, const spin_
 
 Eigen::VectorXd PAPT_pack(const spin_orbital::Hamiltonian& hamiltonian);
 
-spin_orbital::Hamiltonian PAPT_unpack(const Eigen::VectorXd& vector, size_t norb, size_t nelec);
+spin_orbital::Hamiltonian PAPT_unpack(const Eigen::VectorXd& vector, size_t norb, size_t nelec,
+                                      std::vector<int> spin_orbital_symmetries);
 spin_orbital::Hamiltonian PAPT_unpack(const Eigen::VectorXd& vector,
                                       const spin_orbital::Hamiltonian& reference_operator);
-spin_orbital::Hamiltonian PAPT_unpack(const Eigen::VectorXd& vector,
-                                      const spin_orbital::Amplitudes& reference_amplitudes);
 
 } // namespace spin_orbital
 #endif // SPIN_ORBITAL__MANYBODY_H_

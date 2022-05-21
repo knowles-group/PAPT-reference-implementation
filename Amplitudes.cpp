@@ -2,7 +2,7 @@
 #include "Hamiltonian.h"
 #include <iostream>
 using namespace spin_orbital;
-Amplitudes::Amplitudes(const Hamiltonian& hamiltonian) {
+Amplitudes::Amplitudes(const Hamiltonian& hamiltonian) : reference_hamiltonian(hamiltonian) {
   t1 = decltype(t1)(hamiltonian.norb - hamiltonian.nelec, hamiltonian.nelec);
   for (int a = hamiltonian.nelec; a < hamiltonian.norb; ++a)
     for (int i = 0; i < hamiltonian.nelec; ++i)

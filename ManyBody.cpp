@@ -45,6 +45,7 @@ Eigen::VectorXd spin_orbital::PAPT_action(const spin_orbital::Amplitudes& amplit
   const auto& nv = amplitudes.t1.dimension(0);
   spin_orbital::Hamiltonian result(no + nv, true, false);
   result.nelec = no;
+  result.spin_orbital_symmetries = amplitudes.reference_hamiltonian.spin_orbital_symmetries;
   //  std::cout << "amplitudes "<<amplitudes.t2<<std::endl;
   //  std::cout << "action "<<action.t2<<std::endl;
   result.h.setZero();
@@ -67,18 +68,30 @@ Eigen::VectorXd spin_orbital::PAPT_action(const spin_orbital::Amplitudes& amplit
 Eigen::VectorXd spin_orbital::PAPT_pack(const spin_orbital::Hamiltonian& hamiltonian) {
   const auto& no = hamiltonian.nelec;
   const auto& nv = hamiltonian.norb - hamiltonian.nelec;
-  Eigen::VectorXd res(no * (no + 1) / 2 + nv * (nv + 1) / 2);
+  int npack = 0;
+  for (int i = 0; i < no; ++i)
+    for (int j = 0; j <= i; ++j)
+      if (hamiltonian.spin_orbital_symmetries[i] == hamiltonian.spin_orbital_symmetries[j])
+        ++npack;
+  for (int a = 0; a < nv; ++a)
+    for (int b = 0; b <= a; ++b)
+      if (hamiltonian.spin_orbital_symmetries[a+no] == hamiltonian.spin_orbital_symmetries[b+no])
+        ++npack;
+  Eigen::VectorXd res(npack);
   size_t off = 0;
   for (int i = 0; i < no; ++i)
     for (int j = 0; j <= i; ++j)
-      res[off++] = hamiltonian.h(i, j);
+      if (hamiltonian.spin_orbital_symmetries[i] == hamiltonian.spin_orbital_symmetries[j])
+        res[off++] = hamiltonian.h(i, j);
   for (int a = 0; a < nv; ++a)
     for (int b = 0; b <= a; ++b)
-      res[off++] = hamiltonian.h(no + a, no + b);
+      if (hamiltonian.spin_orbital_symmetries[a+no] == hamiltonian.spin_orbital_symmetries[b+no])
+        res[off++] = hamiltonian.h(no + a, no + b);
   return res;
 }
 
-spin_orbital::Hamiltonian spin_orbital::PAPT_unpack(const Eigen::VectorXd& vector, size_t norb, size_t nelec) {
+spin_orbital::Hamiltonian spin_orbital::PAPT_unpack(const Eigen::VectorXd& vector, size_t norb, size_t nelec,
+                                                    std::vector<int> spin_orbital_symmetries) {
   spin_orbital::Hamiltonian result(norb, true, false);
   result.h.setZero();
   int no = nelec;
@@ -86,26 +99,24 @@ spin_orbital::Hamiltonian spin_orbital::PAPT_unpack(const Eigen::VectorXd& vecto
   size_t off = 0;
   for (int i = 0; i < no; ++i)
     for (int j = 0; j <= i; ++j)
+      if (spin_orbital_symmetries[i] == spin_orbital_symmetries[j])
       result.h(i, j) = result.h(j, i) = vector[off++];
   for (int a = 0; a < nv; ++a)
     for (int b = 0; b <= a; ++b)
+      if (spin_orbital_symmetries[a+no] == spin_orbital_symmetries[b+no])
       result.h(no + a, no + b) = result.h(no + b, no + a) = vector[off++];
   result.f = result.h;
   result.nelec = nelec;
   result.e0 = 0;
   for (int i = 0; i < nelec; ++i)
     result.e0 += result.f(i, i);
-  return result;
-}
-spin_orbital::Hamiltonian spin_orbital::PAPT_unpack(const Eigen::VectorXd& vector,
-                                                    const spin_orbital::Amplitudes& reference_amplitudes) {
-  return spin_orbital::PAPT_unpack(vector, reference_amplitudes.t1.dimension(0) + reference_amplitudes.t1.dimension(1),
-                                   reference_amplitudes.t1.dimension(1));
+return result;
 }
 
 spin_orbital::Hamiltonian spin_orbital::PAPT_unpack(const Eigen::VectorXd& vector,
                                                     const spin_orbital::Hamiltonian& reference_operator) {
-  auto hamiltonian = spin_orbital::PAPT_unpack(vector, reference_operator.norb, reference_operator.nelec);
+  auto hamiltonian =
+      spin_orbital::PAPT_unpack(vector, reference_operator.norb, reference_operator.nelec, reference_operator.spin_orbital_symmetries);
   hamiltonian.spin_orbital = reference_operator.spin_orbital;
   hamiltonian.ecore = reference_operator.ecore;
   hamiltonian.uhf = reference_operator.uhf;
@@ -117,7 +128,7 @@ spin_orbital::Hamiltonian spin_orbital::PAPT_unpack(const Eigen::VectorXd& vecto
 }
 Eigen::VectorXd spin_orbital::PAPT_kernel_action(const Eigen::VectorXd& potential,
                                                  const spin_orbital::Amplitudes& amplitudes) {
-  auto hamiltonian = PAPT_unpack(potential, amplitudes);
+  auto hamiltonian = PAPT_unpack(potential, amplitudes.reference_hamiltonian);
   auto action = SDaction(hamiltonian, amplitudes, true, false);
   return PAPT_action(amplitudes, action);
 }
