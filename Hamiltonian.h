@@ -21,6 +21,7 @@ public:
   double e0;
   double e1;
   std::vector<std::vector<int>> spin_orbital;
+  std::vector<int> spin_orbital_symmetries;
   Hamiltonian(const molpro::FCIdump&);
   Hamiltonian(size_t basis_size, bool oneElectron = true, bool twoElectron = true);
   void dump(const std::string& filename) const;

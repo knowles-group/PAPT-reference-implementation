@@ -64,6 +64,16 @@ Hamiltonian::Hamiltonian(const molpro::FCIdump &fcidump)
     }
   }
 
+  spin_orbital_symmetries.assign(norb,0);
+  for (int spin = 0; spin < 2; ++spin)
+    for (int i = 1; i < norb_space + 1; ++i)
+      spin_orbital_symmetries[spin_orbital[spin][i]] = 8 * spin + orbsym[i - 1];
+//  spin_orbital_symmetries.assign(norb,0); // to disable use of spatial/spin symmetry
+//  std::cout << "spin-orbital symmetries";
+//  for (int i=0; i<norb; ++i)
+//    std::cout <<" "<<spin_orbital_symmetries[i];
+//  std::cout << std::endl;
+
   int i, j, k, l;
   double value;
   molpro::FCIdump::integralType type;
