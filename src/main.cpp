@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
     result(molproPlugin, "PAPT2", hamiltonian.e0 + hamiltonian.e1 + epapt2);
     result(molproPlugin, "PAPT3", hamiltonian.e0 + hamiltonian.e1 + epapt2+ epapt3);
     result(molproPlugin, "MP2", hamiltonian.e0 + hamiltonian.e1 +emp2);
-    result(molproPlugin, "MP3", hamiltonian.e0 + hamiltonian.e1 +emp3);
+    result(molproPlugin, "MP3", hamiltonian.e0 + hamiltonian.e1 +emp2+emp3);
   }
   MPI_Finalize();
   return 0;
