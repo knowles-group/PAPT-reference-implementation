@@ -1,7 +1,8 @@
-#include "LA.h"
+#include "utility.h"
 #include <Eigen/Dense>
 #include <Eigen/QR>
 #include <iostream>
+#include <iomanip>
 Eigen::VectorXd spin_orbital::linsolve(const Eigen::MatrixXd& kernel, const Eigen::VectorXd& rhs) {
   Eigen::VectorXd result(kernel.rows());
   Eigen::CompleteOrthogonalDecomposition<Eigen::MatrixXd> cod(kernel);
@@ -18,4 +19,14 @@ Eigen::VectorXd spin_orbital::linsolve(const Eigen::MatrixXd& kernel, const Eige
   }
   result = cod.solve(rhs);
   return result;
+}
+
+void spin_orbital::result(const molpro::PluginGuest& molproPlugin, const std::string& name, double value) {
+  if (molproPlugin.active()) {
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(14);
+    molproPlugin.send(std::string{"TAKE PROPERTY "}+ name);
+    ss << value;
+    molproPlugin.send(ss.str());
+  }
 }

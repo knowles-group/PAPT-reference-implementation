@@ -1,6 +1,6 @@
 #include "Hamiltonian.h"
+#include "molpro/FCIdump.h"
 #include <iostream>
-#include <molpro/FCIdump.h>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <vector>
 
