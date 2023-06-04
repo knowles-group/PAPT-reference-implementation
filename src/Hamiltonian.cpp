@@ -176,6 +176,12 @@ Hamiltonian::Hamiltonian(const molpro::FCIdump &fcidump)
       fockdiag = fockdiag and (std::abs(f(i, j)) < 1e-7);
   if (not fockdiag)
     std::cout << "Warning: Fock matrix is not diagonal" << std::endl;
+//  std::cout << "Fock diagonals"<<std::endl;
+//  for (int i = 0; i < norb; ++i) {
+//    for (int j = i; j <= i; ++j)
+//     std::cout <<f(i, j);
+//    std::cout << std::endl;
+//  }
 }
 
 Hamiltonian::Hamiltonian(size_t basis_size, bool oneElectron, bool twoElectron) : norb(basis_size) {
