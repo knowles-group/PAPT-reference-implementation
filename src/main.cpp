@@ -12,6 +12,25 @@
 using molpro::FCIdump;
 using namespace spin_orbital;
 
+void eigensolution_sort(Eigen::MatrixXd& vec, Eigen::VectorXd& val) {
+  //  return;
+  for (int i = 0; i < val.size(); ++i) {
+    int jmax = i;
+    for (int j = i + 1; j < val.size(); ++j) {
+      if (std::abs(vec.col(j)[i]) > std::abs(vec.col(jmax)[i]))
+        jmax = j;
+    }
+    if (i != jmax) {
+      vec.col(i).swap(vec.col(jmax));
+      std::swap(val(i), val(jmax));
+      //    std::cout << "swap "<<i<<" "<<jmax<<"; new eigenvalue"<<val(i)<<std::endl;
+    }
+  }
+  // std::cout <<"should be zero:
+  // "<<(vec*vec.transpose()-Eigen::MatrixXd::Identity(val.size(),val.size())).maxCoeff()<<std::endl;
+  return;
+}
+
 int main(int argc, char* argv[]) {
   std::cout << std::fixed << std::setprecision(8);
   MPI_Init(&argc, &argv);
@@ -70,29 +89,40 @@ int main(int argc, char* argv[]) {
 
     std::cout << "check: " << (papt_kernel * papt_solution - papt_rhs).norm() << std::endl;
     auto papt_operator = PAPT_unpack(papt_solution, hamiltonian);
-    //  auto solver_raw = Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>(
-    //      Eigen::Map<Eigen::MatrixXd>(papt_operator.f.data(),
-    //      papt_operator.norb, papt_operator.norb));
-    //  std::cout << "PAPT operator eigenvalues before shift: " <<
-    //  solver_raw.eigenvalues().transpose() << std::endl; std::cout <<
-    //  "hamiltonian.e0 " << hamiltonian.e0 << std::endl; std::cout <<
-    //  "papt_operator.e0 " << papt_operator.e0 << std::endl;
+    auto solver_raw = Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>(
+        Eigen::Map<Eigen::MatrixXd>(papt_operator.f.data(), papt_operator.norb, papt_operator.norb));
+    Eigen::VectorXd eigval_raw = solver_raw.eigenvalues().eval();
+    auto eigenvectors_raw = solver_raw.eigenvectors().eval();
+    eigensolution_sort(eigenvectors_raw, eigval_raw);
+    papt_operator.e0 = 0;
+    for (int i = 0; i < papt_operator.nelec; ++i)
+      papt_operator.e0 += eigval_raw(i);
+    //    std::cout << "PAPT operator eigenvalues before shift: " <<
+    //      eigval_raw.transpose() << std::endl; std::cout <<
+    //      "hamiltonian.e0 " << hamiltonian.e0 << std::endl; std::cout <<
+    //      "papt_operator.e0 " << papt_operator.e0 << std::endl;
     for (int i = 0; i < hamiltonian.norb; ++i)
       papt_operator.f(i, i) += (hamiltonian.e0 - hamiltonian.ecore - papt_operator.e0) / hamiltonian.nelec;
     auto solver = Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>(
         Eigen::Map<Eigen::MatrixXd>(papt_operator.f.data(), papt_operator.norb, papt_operator.norb));
-    std::cout << "PAPT operator eigenvalues: " << solver.eigenvalues().transpose() << std::endl;
+    //    std::cout << "PAPT operator eigenvalues: " << solver.eigenvalues().transpose() << std::endl;
     auto papt_operator_rotated = papt_operator;
-    const Eigen::VectorXd eigval = solver.eigenvalues().eval();
+    Eigen::VectorXd eigval = solver.eigenvalues().eval();
+    auto eigenvectors = solver.eigenvectors().eval();
+    eigensolution_sort(eigenvectors, eigval);
+    std::cout << "PAPT operator eigenvalues: " << eigval.transpose() << std::endl;
+    for (int i = papt_operator.nelec; i < hamiltonian.norb; ++i)
+      if (eigval(i) < eigval(papt_operator.nelec - 1))
+        eigval(i) = 1e99; // project out intruders
     const Eigen::MatrixXd eigvalmat = eigval.asDiagonal();
     papt_operator_rotated.f =
         Eigen::TensorMap<const Eigen::Tensor<double, 2>>(eigvalmat.data(), eigval.rows(), eigval.rows());
-    auto rotated_Kijab = Kijab.transform(solver.eigenvectors());
+    auto rotated_Kijab = Kijab.transform(eigenvectors);
     auto amplitudes_PAPT1 = rotated_Kijab.MP1(papt_operator_rotated);
     double epapt2 = rotated_Kijab * amplitudes_PAPT1;
     std::cout << "PAPT2 energy contribution and total: " << epapt2 << " " << hamiltonian.e0 + hamiltonian.e1 + epapt2
               << std::endl;
-    auto amplitudes_PAPT1_backrotated = amplitudes_PAPT1.transform(solver.eigenvectors().transpose());
+    auto amplitudes_PAPT1_backrotated = amplitudes_PAPT1.transform(eigenvectors.transpose());
     std::cout << "PAPT2 energy contribution: "
               << -(SDaction(papt_operator, amplitudes_PAPT1_backrotated, true, false) * amplitudes_PAPT1_backrotated)
               << std::endl;
@@ -109,9 +139,9 @@ int main(int argc, char* argv[]) {
       papt_operator.dump(argv[2]);
 
     result(molproPlugin, "PAPT2", hamiltonian.e0 + hamiltonian.e1 + epapt2);
-    result(molproPlugin, "PAPT3", hamiltonian.e0 + hamiltonian.e1 + epapt2+ epapt3);
-    result(molproPlugin, "MP2", hamiltonian.e0 + hamiltonian.e1 +emp2);
-    result(molproPlugin, "MP3", hamiltonian.e0 + hamiltonian.e1 +emp2+emp3);
+    result(molproPlugin, "PAPT3", hamiltonian.e0 + hamiltonian.e1 + epapt2 + epapt3);
+    result(molproPlugin, "MP2", hamiltonian.e0 + hamiltonian.e1 + emp2);
+    result(molproPlugin, "MP3", hamiltonian.e0 + hamiltonian.e1 + emp2 + emp3);
   }
   MPI_Finalize();
   return 0;
