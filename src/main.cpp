@@ -14,8 +14,8 @@ using molpro::FCIdump;
 using namespace spin_orbital;
 
 void eigensolution_sort(Eigen::MatrixXd &vec, Eigen::VectorXd &val) {
-    std::cout << "initial eigenvectors\n"<<vec<<std::endl;
-    std::cout << "initial eigenvalues\n"<<val<<std::endl;
+    std::cout << "initial eigenvectors\n" << vec << std::endl;
+    std::cout << "initial eigenvalues\n" << val << std::endl;
     //  return;
     for (int i = 0; i < val.size(); ++i) {
         int jmax = i;
@@ -31,8 +31,8 @@ void eigensolution_sort(Eigen::MatrixXd &vec, Eigen::VectorXd &val) {
     }
     // std::cout <<"should be zero:
     // "<<(vec*vec.transpose()-Eigen::MatrixXd::Identity(val.size(),val.size())).maxCoeff()<<std::endl;
-    std::cout << "final eigenvectors\n"<<vec<<std::endl;
-    std::cout << "final eigenvalues\n"<<val<<std::endl;
+    std::cout << "final eigenvectors\n" << vec << std::endl;
+    std::cout << "final eigenvalues\n" << val << std::endl;
     return;
 }
 
@@ -44,6 +44,8 @@ int main(int argc, char *argv[]) {
     {
         molpro::PluginGuest molproPlugin;
         std::string fcidumpname;
+        bool ip = true;
+        bool ea = true;
         if (molproPlugin.active()) {
             molproPlugin.send("GIVE OPERATOR HAMILTONIAN FCIDUMP");
             fcidumpname = molproPlugin.receive();
@@ -51,6 +53,8 @@ int main(int argc, char *argv[]) {
             if (argc < 2)
                 throw std::out_of_range("must give FCIdump filename as first command-line argument");
             fcidumpname = argv[1];
+            if (argc > 2) ea = false;
+            if (argc > 3) ip = false;
         }
         std::cout << "fcidump " << fcidumpname << std::endl;
         auto fcidump = molpro::FCIdump(fcidumpname);
@@ -154,12 +158,16 @@ int main(int argc, char *argv[]) {
 //        result(molproPlugin, "MP2", hamiltonian.e0 + hamiltonian.e1 + emp2);
 //        result(molproPlugin, "MP3", hamiltonian.e0 + hamiltonian.e1 + emp2 + emp3);
 
-        result(molproPlugin, "IP-ADC(0)", IP_ADC(hamiltonian, amplitudes, 0));
-        result(molproPlugin, "IP-ADC(2)", IP_ADC(hamiltonian, amplitudes, 2));
-        result(molproPlugin, "IP-ADC(P2)", IP_ADC(hamiltonian, amplitudes_PAPT1_backrotated, 2));
-        result(molproPlugin, "EA-ADC(0)", EA_ADC(hamiltonian, amplitudes, 0));
-        result(molproPlugin, "EA-ADC(2)", EA_ADC(hamiltonian, amplitudes, 2));
-        result(molproPlugin, "EA-ADC(P2)", EA_ADC(hamiltonian, amplitudes_PAPT1_backrotated, 2));
+        if (ip) {
+            result(molproPlugin, "IP-ADC(0)", IP_ADC(hamiltonian, amplitudes, 0));
+            result(molproPlugin, "IP-ADC(2)", IP_ADC(hamiltonian, amplitudes, 2));
+            result(molproPlugin, "IP-ADC(P2)", IP_ADC(hamiltonian, amplitudes_PAPT1_backrotated, 2));
+        }
+        if (ea) {
+            result(molproPlugin, "EA-ADC(0)", EA_ADC(hamiltonian, amplitudes, 0));
+            result(molproPlugin, "EA-ADC(2)", EA_ADC(hamiltonian, amplitudes, 2));
+            result(molproPlugin, "EA-ADC(P2)", EA_ADC(hamiltonian, amplitudes_PAPT1_backrotated, 2));
+        }
     }
     MPI_Finalize();
     return 0;
