@@ -4,9 +4,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(FORTRAN OFF)
 set(DEPENDENCYMANAGER_FETCHCONTENT OFF)
 
-add_executable(PAPT.exe main.cpp Hamiltonian.cpp Amplitudes.cpp Amplitudes.h ManyBody.cpp ManyBody.h utility.cpp utility.h)
+add_executable(PAPT.exe main.cpp Hamiltonian.cpp Amplitudes.cpp Amplitudes.h ManyBody.cpp ManyBody.h utility.cpp utility.h ADC.cpp ADC.h)
 
-FetchContent_Declare(molpro-plugin GIT_REPOSITORY https://gitlab.com/molpro/molpro-plugin.git)
+FetchContent_Declare(molpro-plugin GIT_REPOSITORY https://github.com/molpro/molpro-plugin.git)
 FetchContent_MakeAvailable(molpro-plugin)
 target_link_libraries(PAPT.exe molpro::molpro-plugin)
 
