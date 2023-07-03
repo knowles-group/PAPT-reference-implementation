@@ -66,9 +66,9 @@ double EA_ADC(const spin_orbital::Hamiltonian &hamiltonian, const spin_orbital::
                 for (int c = 0; c < nv; ++c)
                     for (int i = 0; i < no; ++i)
                         for (int j = 0; j < no; ++j)
-                            m(a, b) -
-                            0.25 * t1.t2(a, c, i, j) * Kijab.t2(b, c, i, j)
-                            + 0.25 * t1.t2(b, c, i, j) * Kijab.t2(a, c, i, j);
+                            m(a, b) -=
+                                    0.25 * t1.t2(a, c, i, j) * Kijab.t2(b, c, i, j)
+                                    + 0.25 * t1.t2(b, c, i, j) * Kijab.t2(a, c, i, j);
         }
     }
 
